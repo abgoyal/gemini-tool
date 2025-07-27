@@ -6,18 +6,22 @@ on:
       - 'v*.*.*'
 
 jobs:
-  build-release:
-    name: Build and Release
+  goreleaser:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
 
+      # GoReleaser's 'before' hook will call 'go generate', which needs npm.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -25,33 +29,14 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'ui/package-lock.json'
 
-      - name: Build Frontend
-        run: |
-          cd ui
-          npm ci
-          npm run build
+      - name: Install UI Dependencies
+        run: npm --prefix ./ui ci
 
-      - name: Build Go Binaries
-        run: |
-          mkdir -p ./release
-          # Build for Linux (amd64)
-          GOOS=linux GOARCH=amd64 go build -o ./release/gemini-lan-tool-linux-amd64 .
-          # Build for Windows (amd64)
-          GOOS=windows GOARCH=amd64 go build -o ./release/gemini-lan-tool-windows-amd64.exe .
-          # Build for macOS (amd64)
-          GOOS=darwin GOARCH=amd64 go build -o ./release/gemini-lan-tool-macos-amd64 .
-          # Build for macOS (arm64)
-          GOOS=darwin GOARCH=arm64 go build -o ./release/gemini-lan-tool-macos-arm64 .
-
-      - name: Create Release
-        uses: actions/create-release@v1
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-          files: |
-            ./release/*
-
