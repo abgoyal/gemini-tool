@@ -1,0 +1,57 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'ui/package-lock.json'
+
+      - name: Build Frontend
+        run: |
+          cd ui
+          npm ci
+          npm run build
+
+      - name: Build Go Binaries
+        run: |
+          mkdir -p ./release
+          # Build for Linux (amd64)
+          GOOS=linux GOARCH=amd64 go build -o ./release/gemini-lan-tool-linux-amd64 .
+          # Build for Windows (amd64)
+          GOOS=windows GOARCH=amd64 go build -o ./release/gemini-lan-tool-windows-amd64.exe .
+          # Build for macOS (amd64)
+          GOOS=darwin GOARCH=amd64 go build -o ./release/gemini-lan-tool-macos-amd64 .
+          # Build for macOS (arm64)
+          GOOS=darwin GOARCH=arm64 go build -o ./release/gemini-lan-tool-macos-arm64 .
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+          files: |
+            ./release/*
+

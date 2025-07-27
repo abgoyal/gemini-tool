@@ -1,0 +1,17 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+gemini-tool
+gemini-tool.db
+gemini-tool.db-journal
+
+# Node / Svelte
+/ui/node_modules/
+/ui/.svelte-kit/
+/ui/build/
+.DS_Store
+
+gemini_key.sh

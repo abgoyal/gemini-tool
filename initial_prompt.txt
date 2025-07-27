@@ -1,0 +1,47 @@
+You are an expert Go and Svelte developer. Your task is to build a full-stack, single-binary web application for personal LAN use from scratch, ensuring it is robust, maintainable, and user-friendly.
+
+**Core Functionality:**
+The application is a tool that acts as a frontend for the Google Gemini generative AI API. It will have a two-page web UI: a main chat interface and a separate page for managing a library of "saved prompts".
+
+**Technical & Design Requirements:**
+
+1.  **Backend (Go):**
+    *   Use the standard `net/http` library. Do not use external web frameworks.
+    *   Create a JSON API with the following endpoints:
+        *   `GET /api/models`: Dynamically fetch a list of all models from the Google API that support the `generateContent` method.
+        *   `/api/prompts`: Handle `GET` (list all), `POST` (create new), and `PUT` (update existing).
+        *   `GET /api/chats`: List all historical chat records.
+        *   `POST /api/generate`: Submit a request. The JSON body must include `prompt_id` and `user_input`, and support an *optional* `model` field to override the prompt's default for that run.
+    *   Implement a "retry once" policy for all calls to the Gemini API.
+    *   Log all HTTP requests to stdout with timestamps, method, path, and duration.
+
+2.  **Frontend (Web UI):**
+    *   Use **Svelte 5 with Runes** and modern lowercase event attributes (e.g., `onsubmit`, `onclick`). Use Pico.css for styling.
+    *   Create two distinct pages:
+        1.  **Main Chat Page (`/`):**
+            *   Display a list of chat history in a sidebar. Each item must show the user input snippet, the full timestamp of the request, the name of the prompt used, the model used, and token counts.
+            *   Each history item must have a "Re-run" button that opens a modal, allowing the user to select a new model and re-submit the request.
+            *   The main area should contain a form to select a saved prompt and enter user text.
+            *   Include a prominent button that navigates to the prompt management page.
+        2.  **Prompt Management Page (`/prompts`):**
+            *   This page is for full CRUD management of prompts.
+            *   List all existing prompts. Each item in the list must have an "Edit" button and a "Clone" button.
+            *   The "Edit" button should open a modal to modify and save the prompt.
+            *   The "Clone" button should populate the "Create New" form with the selected prompt's data.
+            *   Include a form to create a new prompt from scratch.
+
+3.  **Data Persistence & Migration (SQLite):**
+    *   Use SQLite as the database.
+    *   Define the final database schema:
+        *   `prompts` table: (id, name, prompt_text, separator, model)
+        *   `chats` table: (id, prompt_id, user_input, model_output, timestamps, token_counts, error_message, **prompt_name**, **model_used**). The `prompt_name` and `model_used` columns are critical for preserving the historical accuracy of a chat record, so they must be populated when the chat is created.
+    *   **Crucially, implement an automated database migration and data backfilling system** within the Go application's startup logic. The system must:
+        1.  Check if the `chats` table is missing the `prompt_name` and `model_used` columns and add them if necessary (`ALTER TABLE`).
+        2.  After ensuring the columns exist, run a one-time data backfill operation to populate these new columns for any old records where they are `NULL`, by looking up the data from the `prompts` table based on `prompt_id`.
+
+4.  **Build & Deployment:**
+    *   The entire application MUST be deployable as a **single executable binary**.
+    *   Use Go's `embed` package to embed the static Svelte UI assets into the Go binary.
+    *   **Use `go generate`** to create a unified build process. A `//go:generate` comment in `main.go` should trigger the `npm run build` command for the UI, so the entire project can be built with `go generate ./... && go build ...`.
+    *   The only external configuration at runtime is the `GEMINI_API_KEY`, provided as an environment variable.
+

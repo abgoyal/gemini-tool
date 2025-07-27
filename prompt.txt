@@ -1,0 +1,31 @@
+The existing project is a Go-based web server with a Svelte 5 frontend, designed for LAN use. It's a single, self-contained binary that serves a web UI for interacting with the Google Gemini API.
+
+**Current State & Architecture:**
+- **Backend:** Go 1.22+ using the standard `net/http` library. It exposes a JSON API.
+- **Frontend:** Svelte 5 (with Runes and lowercase `on...` event attributes) and Pico.css. The UI is split into two pages: a main chat interface (`/`) and a prompt management page (`/prompts`).
+- **Database:** SQLite. The Go application automatically handles schema migrations and data backfilling on startup to ensure no data is lost when upgrading from older versions. The schema includes two tables:
+    1. `prompts` (id, name, prompt_text, separator, model)
+    2. `chats` (id, prompt_id, user_input, model_output, timestamps, token_counts, error_message, prompt_name, model_used). The `prompt_name` and `model_used` fields are denormalized to ensure chat history integrity even if the original prompt is edited or deleted.
+- **Build Process:** A `go:generate` directive in `main.go` triggers the Svelte UI build (`npm run build`). The entire application is built using a single command: `go generate ./... && go build ...`.
+- **Deployment:** The Svelte UI is embedded into the Go binary using `embed`. The only external runtime dependency is the `GEMINI_API_KEY` environment variable.
+
+**Feature Set:**
+- **Prompt Management Page (`/prompts`):**
+    - Lists all saved prompts.
+    - Allows editing of existing prompts via a modal window.
+    - Allows cloning of an existing prompt into the "Create New" form.
+    - A form to create entirely new prompts.
+- **Main Chat Page (`/`):**
+    - A "Manage Prompts" button links to the prompts page.
+    - Chat history is displayed in a sidebar with full details: user input snippet, timestamp, prompt name, model used, and token counts.
+    - A "Re-run" button for each history item opens a modal, allowing the user to execute the same request with a different model.
+    - The main form allows selecting a prompt and submitting user input.
+    - API calls have a built-in retry-once mechanism.
+- **API Endpoints:**
+    - `GET /api/models`: Dynamically fetches a list of compatible models from the Gemini API.
+    - `GET /api/prompts`: Returns all saved prompts.
+    - `POST /api/prompts`: Creates a new prompt.
+    - `PUT /api/prompts`: Updates an existing prompt.
+    - `GET /api/chats`: Returns all chat history.
+    - `POST /api/generate`: Submits a request. Accepts an optional `model` field in the JSON body to override the prompt's default model for that specific run.
+
