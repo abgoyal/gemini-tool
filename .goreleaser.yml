@@ -1,29 +1,17 @@
-# .goreleaser.yml
-# This configuration adopts your preferred style: direct binary releases.
-# It uses version 2 of the GoReleaser config format.
 version: 2
-
-# The project name used throughout the configuration.
 project_name: gemini-tool
 
-# This 'before' hook is critical. It runs our 'go:generate' directive,
-# which in turn builds the Svelte UI before GoReleaser starts compiling.
+# build svelte before building go binary
 before:
   hooks:
     - go generate .
 
-# Defines the build configurations for the project.
 builds:
   -
-    # An identifier for this build configuration.
     id: gemini-tool
-    # The name of the binary on disk during the build process.
     binary: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}_{{ .Tag }}'
-    # Environment variables for the build. CGO_ENABLED=0 is a best practice
-    # for creating static binaries that are easy to deploy.
     env:
       - CGO_ENABLED=0
-    # The target platforms (Operating Systems and Architectures).
     goos:
       - linux
       - windows
@@ -31,47 +19,29 @@ builds:
     goarch:
       - amd64
       - arm64
-    # We can ignore less common platform combinations.
-    ignore:
-      - goos: windows
-        goarch: arm64
-    # The main package to build is in the root directory.
     main: ./
-    # ldflags strip debugging information, making the final binary smaller.
     ldflags:
       - -s -w
 
-# This 'archives' section is configured to NOT create archives.
-# Instead, it treats the raw binary as the release artifact.
 archives:
   -
-    id: gemini-lan-tool-archive
-    # This is the key setting. 'binary' tells GoReleaser to skip archiving.
+    id: gemini-tool-archive
     formats:
       - binary
     wrap_in_directory: false
     strip_binary_directory: true
-    # This template defines the name of the final asset that will be uploaded
-    # to the GitHub Release, following your preferred naming convention.
-    # Example: gemini-lan-tool_v1.0.0_linux_amd64
     name_template: '{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}'
 
-# Generates a file with SHA256 checksums for all release artifacts.
-# This is a security best practice.
 checksum:
   name_template: 'checksums.txt'
 
-# Automatically generates release notes from git commit history.
 changelog:
   sort: asc
   filters:
-    # Excludes non-essential commit types from the release notes.
     exclude:
       - '^docs:'
       - '^test:'
-      - '(?i)chore'
 
-# Configures the properties of the GitHub Release itself.
 release:
   # 'auto' means it will be marked as a pre-release if the tag is a pre-release
   # (e.g., v1.0.0-beta1) and a full release otherwise.
