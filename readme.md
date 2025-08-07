@@ -1,7 +1,11 @@
 
+THIS PROJECT HAS NO LINKS TO GOOGLE AND IS NOT A GOOGLE/GEMINI PROJECT!
+The "GEMINI" word here is used only to refer to the AI MODEL that is used in this tool.
+
 ===================
 Gemini LAN Tool
 ===================
+
 
 A simple, self-hosted, Go-based web tool for interacting with the Google Gemini API.
 It is designed for LAN usage, requires no authentication, and is deployed as a single,
@@ -90,7 +94,7 @@ Creates a new prompt.
 $ curl -X POST -H "Content-Type: application/json" \
   -d '{"name":"Summarizer","prompt_text":"Summarize the following text:","separator":"---","model":"models/gemini-1.5-flash"}' \
   http://localhost:8080/api/prompts
-  
+
 **PUT /api/prompts**
 Updates an existing prompt.
 $ curl -X PUT -H "Content-Type: application/json" \
